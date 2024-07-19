@@ -2,7 +2,7 @@
 
 namespace TextSearcher
 {
-    class Program
+    public class Program
     {
         const string SourceDirectory = "SourceDirectory";
         const string DestinationDirectory = "DestinationDirectory";
@@ -45,7 +45,7 @@ namespace TextSearcher
 
             if (string.IsNullOrEmpty(destinationDirectory))
             {
-                    return;
+                return;
             }
 
             if (destinationDirectory == sourceDirectory)
@@ -61,7 +61,11 @@ namespace TextSearcher
 
             bool caseSensitive = GetCaseSensitive();
 
-            var results = CopyAndProcessFiles(files, destinationDirectory, searchText, caseSensitive);
+            Results results = new();
+
+            CopyFiles(files, destinationDirectory, results);
+
+            SearchTextInFiles(files, searchText, caseSensitive, results);
 
             ShowResults(results);
         }
@@ -149,11 +153,8 @@ namespace TextSearcher
             return caseSensitive;
         }
 
-        static Results CopyAndProcessFiles(string[] files, string destinationDirectory, string searchText, bool caseSensitive)
+        public static Results CopyFiles(string[] files, string destinationDirectory, Results results)
         {
-            var results = new Results();
-            StringComparison comp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
@@ -172,11 +173,23 @@ namespace TextSearcher
                     results.FailedCopyCount++;
                     continue;
                 }
+            }
+
+            return results;
+        }
+
+        public static Results SearchTextInFiles(string[] files, string searchText, bool caseSensitive, Results results)
+        {
+            StringComparison comp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            foreach (string file in files)
+            {
+                string fileName = Path.GetFileName(file);
 
                 string fileContent;
                 try
                 {
-                    fileContent = File.ReadAllText(destFile);
+                    fileContent = File.ReadAllText(file);
                 }
                 catch (Exception ex)
                 {
@@ -216,6 +229,7 @@ namespace TextSearcher
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("\nResults:");
             Console.ResetColor();
+
             Console.WriteLine($" - total files copied: {results.CopiedFileCount}");
 
             if (results.FailedCopyCount > 0)
