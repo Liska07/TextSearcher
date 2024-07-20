@@ -74,8 +74,7 @@ namespace TextSearcher
             Results results = new();
             CopyFiles(files, destinationDirectory, results);
             SearchTextInFiles(files, searchText, caseSensitive, results);
-
-            ShowResults(results);
+            results.ShowResults();
 
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
@@ -249,32 +248,6 @@ namespace TextSearcher
             }
 
             return results;
-        }
-
-        static void ShowResults(Results results)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("\nResults summary:");
-            logger.Info($"Total files copied: {results.CopiedFileCount}");
-            Console.ResetColor();
-
-            if (results.FailedCopyCount > 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                logger.Warn($"Total files failed to copy: {results.FailedCopyCount}");
-                Console.ResetColor();
-            }
-
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            logger.Info($"Total files containing the specified text: {results.TextFoundCount}");
-            Console.ResetColor();
-
-            if (results.FailedReadCount > 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                logger.Warn($"Total files failed to read: {results.FailedReadCount}");
-                Console.ResetColor();
-            }
         }
     }
 }
