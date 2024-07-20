@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using NLog;
+using System.Configuration;
 
 namespace TextSearcher
 {
@@ -8,6 +9,7 @@ namespace TextSearcher
         const string DestinationDirectory = "DestinationDirectory";
         const string SearchText = "SearchText";
         const string CaseSensitive = "CaseSensitive";
+        static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         static void Main(string[] args)
         {
@@ -15,7 +17,7 @@ namespace TextSearcher
            
             if (string.IsNullOrEmpty(sourceDirectory))
             {
-                    return;
+                return;
             }
 
             string[] files;
@@ -26,8 +28,11 @@ namespace TextSearcher
                 if (files.Length == 0)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("No text files found in the source directory for copying.");
+                    logger.Warn("No text files found in the source directory for copying.");
                     Console.ResetColor();
+
+                    Console.WriteLine("\nPress any key to exit...");
+                    Console.ReadKey();
 
                     return;
                 }
@@ -35,9 +40,12 @@ namespace TextSearcher
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"An error occurred while accessing the source directory '{sourceDirectory}': {ex.Message}");
+                logger.Error($"An error occurred while accessing the source directory '{sourceDirectory}': {ex.Message}");
                 Console.ResetColor();
-            
+
+                Console.WriteLine("\nPress any key to exit...");
+                Console.ReadKey();
+
                 return;
             }
 
@@ -51,23 +59,26 @@ namespace TextSearcher
             if (destinationDirectory == sourceDirectory)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("The destination directory cannot be the same as the source directory.");
+                logger.Error("The destination directory cannot be the same as the source directory.");
                 Console.ResetColor();
+
+                Console.WriteLine("\nPress any key to exit...");
+                Console.ReadKey();
 
                 return;
             }
 
             string searchText = GetSearchText();
-
             bool caseSensitive = GetCaseSensitive();
 
             Results results = new();
-
             CopyFiles(files, destinationDirectory, results);
-
             SearchTextInFiles(files, searchText, caseSensitive, results);
 
             ShowResults(results);
+
+            Console.WriteLine("\nPress any key to exit...");
+            Console.ReadKey();
         }
 
         static string GetDirectoryPath(string directoryKey, string directoryName)
@@ -78,6 +89,13 @@ namespace TextSearcher
             {
                 directoryPath = AskUserForDirectoryPath(directoryName);
             }
+
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                string fullPath = Path.GetFullPath(directoryPath);
+                logger.Info($"Full path {directoryName} directory: {fullPath}");
+            }
+ 
             return directoryPath;
         }
 
@@ -88,7 +106,7 @@ namespace TextSearcher
             if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"The directory '{directoryPath}' specified for '{directoryKey}' in the 'App.config' file does not exist.");
+                logger.Error($"The directory '{directoryPath}' specified for '{directoryKey}' in the 'App.config' file does not exist.");
                 Console.ResetColor();
 
                 directoryPath = "";
@@ -112,7 +130,7 @@ namespace TextSearcher
                 {
                     directoryPath = "";
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"The specified {directoryName} directory does not exist. Please try again (or enter 'Q' to quit).");
+                    logger.Error($"The specified {directoryName} directory does not exist. Please try again (or enter 'Q' to quit).");
                     Console.ResetColor();
                 }
             }
@@ -127,6 +145,9 @@ namespace TextSearcher
         static string GetSearchText()
         {
             string searchText = (ConfigurationManager.AppSettings[SearchText] ?? "").Trim();
+
+            if (!string.IsNullOrEmpty(searchText))
+                logger.Info($"Text for searching: {searchText}");
 
             while (string.IsNullOrEmpty(searchText))
             {
@@ -150,11 +171,18 @@ namespace TextSearcher
                 caseSensitive = false;
             }
 
+            logger.Info($"Case sensitive: {caseSensitiveString}");
+
             return caseSensitive;
         }
 
         public static Results CopyFiles(string[] files, string destinationDirectory, Results results)
         {
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"\nCopying process:");
+            Console.ResetColor();
+
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
@@ -164,11 +192,12 @@ namespace TextSearcher
                 {
                     File.Copy(file, destFile, true);
                     results.CopiedFileCount++;
+                    logger.Info($"'{fileName}' successfully copied");
                 }
                 catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"An error occurred while copying the file '{fileName}': {ex.Message}");
+                    logger.Error($"Failed to copy '{fileName}': {ex.Message}");
                     Console.ResetColor();
                     results.FailedCopyCount++;
                     continue;
@@ -180,7 +209,12 @@ namespace TextSearcher
 
         public static Results SearchTextInFiles(string[] files, string searchText, bool caseSensitive, Results results)
         {
+            bool isTextFound = false;
             StringComparison comp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"\nSearching process:");
+            Console.ResetColor();
 
             foreach (string file in files)
             {
@@ -194,7 +228,7 @@ namespace TextSearcher
                 catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"An error occurred while reading the file '{fileName}': {ex.Message}");
+                    logger.Error($"Failed to read '{fileName}': {ex.Message}");
                     Console.ResetColor();
                     results.FailedReadCount++;
                     continue;
@@ -202,49 +236,43 @@ namespace TextSearcher
 
                 if (fileContent.IndexOf(searchText, comp) >= 0)
                 {
-                    if (!results.TextFound)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"\nThe following files contain the text '{searchText}':");
-                        Console.ResetColor();
-                        results.TextFound = true;
-                    }
+                    isTextFound = true;
 
-                    Console.WriteLine($" * {fileName}");
+                    logger.Info($"'{fileName}' contains the text '{searchText}'");
                     results.TextFoundCount++;
                 }
             }
+
+            if (!isTextFound)
+            {
+                logger.Info("No files contain the text '{searchText}'");
+            }
+
             return results;
         }
 
         static void ShowResults(Results results)
         {
-            if (!results.TextFound)
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("\nNo files contain the specified text.");
-                Console.ResetColor();
-            }
-
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("\nResults:");
+            Console.WriteLine("\nResults summary:");
+            logger.Info($"Total files copied: {results.CopiedFileCount}");
             Console.ResetColor();
-
-            Console.WriteLine($" - total files copied: {results.CopiedFileCount}");
 
             if (results.FailedCopyCount > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($" - total files failed to copy: {results.FailedCopyCount}");
+                logger.Warn($"Total files failed to copy: {results.FailedCopyCount}");
                 Console.ResetColor();
             }
 
-            Console.WriteLine($" - total files containing the specified text: {results.TextFoundCount}");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            logger.Info($"Total files containing the specified text: {results.TextFoundCount}");
+            Console.ResetColor();
 
             if (results.FailedReadCount > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($" - total files failed to read: {results.FailedReadCount}");
+                logger.Warn($"Total files failed to read: {results.FailedReadCount}");
                 Console.ResetColor();
             }
         }

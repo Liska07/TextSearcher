@@ -1,3 +1,5 @@
+using NLog;
+
 namespace TextSearcher.Tests
 {
     public class ProgramTests
@@ -6,7 +8,7 @@ namespace TextSearcher.Tests
         string sourceDirectory = "";
         string destinationDirectory = "";
         string[] files = [];
-        
+        readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         [OneTimeSetUp]
         public void InitializeTestFiles()
@@ -17,6 +19,7 @@ namespace TextSearcher.Tests
                 sourceDirectory = Path.Combine(tempPath, "Source");
 
                 Directory.CreateDirectory(sourceDirectory);
+                logger.Info($"Source directory was created: {sourceDirectory}");
 
                 File.WriteAllText(Path.Combine(sourceDirectory, "file1.txt"), "This is the content of file1.");
                 File.WriteAllText(Path.Combine(sourceDirectory, "file2.txt"), "This file contains the search text. Need to find.");
@@ -29,7 +32,7 @@ namespace TextSearcher.Tests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while setting up test files: {ex.Message}");
+                logger.Error($"An error occurred while setting up test files: {ex.Message}");
                 throw;
             }
         }
@@ -41,11 +44,11 @@ namespace TextSearcher.Tests
             {
                 destinationDirectory = Path.Combine(tempPath, "Destination");
                 Directory.CreateDirectory(destinationDirectory);
-                
+                logger.Info($"Destination directory was created: {destinationDirectory}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while creating the destination directory: {ex.Message}");
+                logger.Error($"An error occurred while creating the destination directory: {ex.Message}");
                 throw;
             }
         }
@@ -56,10 +59,11 @@ namespace TextSearcher.Tests
             try
             {
                 Directory.Delete(destinationDirectory, true);
+                logger.Info($"Destination directory was deleted: {destinationDirectory}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while deleting destination directory: {ex.Message}");
+                logger.Error($"An error occurred while deleting destination directory: {ex.Message}");
             }
         }
 
@@ -69,10 +73,11 @@ namespace TextSearcher.Tests
             try
             {
                 Directory.Delete(sourceDirectory, true);
+                logger.Info($"Source directory was deleted: {sourceDirectory}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while deleting source directory: {ex.Message}");
+                logger.Error($"An error occurred while deleting source directory: {ex.Message}");
             }
         }
 
@@ -80,7 +85,6 @@ namespace TextSearcher.Tests
         public void Test_CopyFiles()
         {
             Results actualResults = new();
-
             Program.CopyFiles(files, destinationDirectory, actualResults);
 
             bool areAllFilesExist = true;
@@ -97,13 +101,13 @@ namespace TextSearcher.Tests
 
                     if (!areFilesEqual)
                     {
-                        Console.WriteLine($"File '{destinationFile}' is not equal to '{sourceFile}.");
+                        logger.Error($"File '{destinationFile}' is not equal to '{sourceFile}.");
                         areAllFilesEqual = false;
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"File '{destinationFile}' does not exist in the destination directory.");
+                    logger.Error($"File '{destinationFile}' does not exist in the destination directory.");
                     areAllFilesEqual = false;
                 }
             }
@@ -141,9 +145,7 @@ namespace TextSearcher.Tests
         public void Test_SearchTextInFiles(string searchText, bool caseSensitive, Results expectedResults)
         {
             Results actualResults = new();
-
             Program.CopyFiles(files, destinationDirectory, actualResults);
-
             Program.SearchTextInFiles(files, searchText, caseSensitive, actualResults);
 
             Assert.That(actualResults.IsEqual(expectedResults));
@@ -157,11 +159,10 @@ namespace TextSearcher.Tests
                  false,
                  new Results()
                     {
-                        TextFound = true,
                         CopiedFileCount = 5,
                         FailedCopyCount = 0,
-                        FailedReadCount = 0,
-                        TextFoundCount = 1
+                        TextFoundCount = 1,
+                        FailedReadCount = 0
                     }
              },
              new object[]
@@ -170,11 +171,10 @@ namespace TextSearcher.Tests
                  true,
                  new Results()
                     {
-                        TextFound = false,
                         CopiedFileCount = 5,
                         FailedCopyCount = 0,
-                        FailedReadCount = 0,
-                        TextFoundCount = 0
+                        TextFoundCount = 0,
+                        FailedReadCount = 0
                     }
              },
              new object[]
@@ -183,11 +183,10 @@ namespace TextSearcher.Tests
                  false,
                  new Results()
                     {
-                        TextFound = true,
                         CopiedFileCount = 5,
                         FailedCopyCount = 0,
-                        FailedReadCount = 0,
-                        TextFoundCount = 3
+                        TextFoundCount = 3,
+                        FailedReadCount = 0
                     }
              },
              new object[]
@@ -196,11 +195,10 @@ namespace TextSearcher.Tests
                  false,
                  new Results()
                     {
-                        TextFound = true,
                         CopiedFileCount = 5,
                         FailedCopyCount = 0,
-                        FailedReadCount = 0,
-                        TextFoundCount = 4
+                        TextFoundCount = 4,
+                        FailedReadCount = 0
                     }
              },
         };
