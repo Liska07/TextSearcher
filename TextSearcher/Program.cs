@@ -151,7 +151,7 @@ namespace TextSearcher
             while (string.IsNullOrEmpty(searchText))
             {
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.Write("Insert text for searching: ");
+                Console.Write("Please enter the text for searching: ");
                 Console.ResetColor();
                 searchText = (Console.ReadLine() ?? "").Trim();
             }
@@ -199,7 +199,6 @@ namespace TextSearcher
                     logger.Error($"Failed to copy '{fileName}': {ex.Message}");
                     Console.ResetColor();
                     results.FailedCopyCount++;
-                    continue;
                 }
             }
 
@@ -208,7 +207,6 @@ namespace TextSearcher
 
         public static Results SearchTextInFiles(string[] files, string searchText, bool caseSensitive, Results results)
         {
-            bool isTextFound = false;
             StringComparison comp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -235,16 +233,14 @@ namespace TextSearcher
 
                 if (fileContent.IndexOf(searchText, comp) >= 0)
                 {
-                    isTextFound = true;
-
                     logger.Info($"'{fileName}' contains the text '{searchText}'");
                     results.TextFoundCount++;
                 }
             }
 
-            if (!isTextFound)
+            if (results.TextFoundCount == 0)
             {
-                logger.Info("No files contain the text '{searchText}'");
+                logger.Info($"No files contain the text '{searchText}'");
             }
 
             return results;
