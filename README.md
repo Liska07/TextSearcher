@@ -10,10 +10,10 @@ This repository contains the source code for TextSearcher, a console application
 - **.github/workflows:** Contains the GitHub Actions workflow file with configurations for running unit tests.
 - **TextSearcher.Tests:** This related repository includes unit tests to verify the core functionality of the application.
 - **TextSearcher:** 
-	 - **App.config:** Contains configuration settings for the project, such as source and destination directories, search text, and case sensitivity.
+	 - **App.config:** Contains configuration settings for the project, such as source and destination directories, search text, and case sensitivity. Written in XML format.
 	 - **NLog.config:** Configures logging for the project. Written in XML format, it specifies how logs are handled, including writing logs to both files and the console.
 	 - **Program.cs:** Contains the main entry point for the application and the core logic for running the console application.
-	 - **Results.cs:** Tracks and displays the summary of the application’s operations, including file copying, search results, and any errors.
+	 - **Results.cs:** Tracks and displays the summary of the application’s operations, including file copying, search results, and errors.
 
 ## Running Unit Tests
 Unit tests for this project are configured to run automatically using GitHub Actions. The tests are set up to run under the following conditions:
